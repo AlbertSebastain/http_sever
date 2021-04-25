@@ -45,7 +45,7 @@ class http_conn
         enum HTTP_CODE{NO_REQUEST, GET_REQUEST, BAD_REQUEST, NO_RESOURCE, FORBIDDEN_REQUEST,FILE_REQUEST, INTERNAL_ERROR, CLOSE_CONNECTION}; 
         enum LINE_STATUS{LINE_OK, LINE_BAD, LINE_OPEN};
         http_conn():timer_for_http(DEFAULT_TIME, this){}
-        ~http_conn();
+        ~http_conn() {}
         void init(int, const sockaddr_in&);
         void close_conn(bool close_conn_able = true);
         void process();
