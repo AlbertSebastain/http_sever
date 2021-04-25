@@ -18,16 +18,26 @@
 # include <time.h>
 # include <cstdio>
 # include <iostream>
+# include <vector>
 # include <map>
 # include <sys/stat.h>
 # include <sys/uio.h>
 # include "locker.h"
 # include "logging.h"
 # include "util.h"
-# include "timer.h"
 
 using namespace std;
 class http_conn;
+class heap_timer;
+class heap_timer
+{
+    public:
+        heap_timer(int, http_conn*);
+        ~heap_timer(){}
+        time_t expire;
+        http_conn* http_instance;
+        bool stop_timer;
+};
 struct header_fuc
 {
     string header;
@@ -44,8 +54,8 @@ class http_conn
         enum CHECK_STATE{CHECK_STATE_REQUESTLINE, CHECK_STATE_HEADER, CHECK_STATE_CONTENT};
         enum HTTP_CODE{NO_REQUEST, GET_REQUEST, BAD_REQUEST, NO_RESOURCE, FORBIDDEN_REQUEST,FILE_REQUEST, INTERNAL_ERROR, CLOSE_CONNECTION}; 
         enum LINE_STATUS{LINE_OK, LINE_BAD, LINE_OPEN};
-        http_conn():timer_for_http(DEFAULT_TIME, this){}
-        ~http_conn() {}
+        http_conn(){}
+        ~http_conn();
         void init(int, const sockaddr_in&);
         void close_conn(bool close_conn_able = true);
         void process();
@@ -82,7 +92,7 @@ class http_conn
         static int m_epollfd;
         static int m_user_count;
          function<void()> timer_handler;
-        heap_timer timer_for_http;
+         vector<heap_timer*> timers_for_http;
     private:
         int m_sockfd;
         sockaddr_in m_address;

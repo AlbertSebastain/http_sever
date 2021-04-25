@@ -1,0 +1,10 @@
+HTTP/1.1 400 Bad Request 
+sever: http_sever 1.0
+Content-Length: 172
+Connection: close
+Content-type: text/plain
+
+<html><title>Server Error</title><body bgcolor=ffffff>
+Your request has bad syntax or is inherently impossible to satifsfy.
+</p><hr><em>Http web server</em>
+</body></html>

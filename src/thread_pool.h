@@ -1,4 +1,4 @@
-# ifndef THREAD_POOL.H
+# ifndef THREAD_POOL_H
 # define THREAD_POOL_H
 # include <stack>
 # include <cstdio>
@@ -35,8 +35,8 @@ threadpool<T>::threadpool(config_t config)
     m_max_requests = config.get_thread_num();
     m_stop = false;
     m_threads = nullptr;
-    debug("m thread_num is %d", m_threa_num);
-    debug("m max_requests is %d", m_max_request);
+    debug("m thread_num is %d", m_thread_num);
+    debug("m max_requests is %d", m_max_requests);
     if((m_thread_num <= 0) || (m_max_requests <= 0))
     {
         log_err("thread num or  max request smaller than zero");
@@ -49,7 +49,7 @@ threadpool<T>::threadpool(config_t config)
         m_threads[i] = new thread(&threadpool::run, this);
         if(m_threads[i]->joinable())
         {
-            m_thread[i]->detach();
+            m_threads[i]->detach();
         }
     }
 }
@@ -68,7 +68,7 @@ bool threadpool<T>::append(T* request)
 {
     m_mutex.lock();
     int size;
-    size = m_workstack.size()
+    size = m_workstack.size();
     if(size >= m_max_requests)
     {
         m_mutex.unlock();

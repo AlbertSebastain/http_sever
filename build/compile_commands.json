@@ -1,0 +1,27 @@
+[
+{
+  "directory": "/home/billy/code/net_check/http_server_better/build",
+  "command": "/usr/bin/g++-7    -pthread  -o0 -Wall -g -ggdb   -o CMakeFiles/http_server.dir/src/http_conn.cpp.o -c /home/billy/code/net_check/http_server_better/src/http_conn.cpp",
+  "file": "/home/billy/code/net_check/http_server_better/src/http_conn.cpp"
+},
+{
+  "directory": "/home/billy/code/net_check/http_server_better/build",
+  "command": "/usr/bin/g++-7    -pthread  -o0 -Wall -g -ggdb   -o CMakeFiles/http_server.dir/src/locker.cpp.o -c /home/billy/code/net_check/http_server_better/src/locker.cpp",
+  "file": "/home/billy/code/net_check/http_server_better/src/locker.cpp"
+},
+{
+  "directory": "/home/billy/code/net_check/http_server_better/build",
+  "command": "/usr/bin/g++-7    -pthread  -o0 -Wall -g -ggdb   -o CMakeFiles/http_server.dir/src/main.cpp.o -c /home/billy/code/net_check/http_server_better/src/main.cpp",
+  "file": "/home/billy/code/net_check/http_server_better/src/main.cpp"
+},
+{
+  "directory": "/home/billy/code/net_check/http_server_better/build",
+  "command": "/usr/bin/g++-7    -pthread  -o0 -Wall -g -ggdb   -o CMakeFiles/http_server.dir/src/timer.cpp.o -c /home/billy/code/net_check/http_server_better/src/timer.cpp",
+  "file": "/home/billy/code/net_check/http_server_better/src/timer.cpp"
+},
+{
+  "directory": "/home/billy/code/net_check/http_server_better/build",
+  "command": "/usr/bin/g++-7    -pthread  -o0 -Wall -g -ggdb   -o CMakeFiles/http_server.dir/src/util.cpp.o -c /home/billy/code/net_check/http_server_better/src/util.cpp",
+  "file": "/home/billy/code/net_check/http_server_better/src/util.cpp"
+}
+]

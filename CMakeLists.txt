@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.8)
+project(http_server)
+aux_source_directory(./src source)
+set(CMAKE_CXX_FLAGS  ${CMAKE_CXX_FLAGS}  "-pthread")
+add_executable(http_server ${source})
+set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -o0 -Wall -g -ggdb" )
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -o3 -Wall")

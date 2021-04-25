@@ -9,14 +9,6 @@ using namespace std;
 
 class heap_timer;
 class time_heap;
-class heap_timer
-{
-    public:
-        heap_timer(int, http_conn*);
-        ~heap_timer(){}
-        time_t expire;
-        http_conn* http_instance;
-};
 class time_heap
 {
     public:

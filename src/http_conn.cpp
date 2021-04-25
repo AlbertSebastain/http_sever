@@ -1,5 +1,5 @@
 # include "http_conn.h"
-
+# include "timer.h"
 using namespace std;
 extern time_heap timer_http;
 const char* ok_200_title = "OK";
@@ -11,7 +11,7 @@ const char* error_404_title = "Not Found";
 const char* error_404_form = "The requested file was not found on this server.";
 const char* error_500_title = "Internal Error";
 const char* error_500_form = "There was an unusual problem serving the requested file.\n";
-const char* doc_root = "./html";
+const char* doc_root = "../html";
 const map<string,string> content_type_set{{".html", "text/html"},
     {".xml", "text/xml"},
     {".xhtml", "application/xhtml+xml"},
@@ -33,12 +33,33 @@ const map<string,string> content_type_set{{".html", "text/html"},
     {"null" ,"text/plain"}};
 int http_conn::m_user_count = 0;
 int http_conn::m_epollfd = -1;
+heap_timer::heap_timer(int delay, http_conn* http_m)
+{
+    http_instance = http_m;
+    expire = time(NULL)+delay;
+}
 void http_conn::close_conn(bool close_conn_able)
 {
     if(close_conn_able)
     {
+        log_info("close fd %d",m_sockfd);
         if(m_sockfd != -1)
         {
+            if(!timers_for_http.empty())
+            {
+                int size;
+                size = timers_for_http.size();
+                for(int i=0;i<size;i++)
+                {
+                    timer_http.del_timer(timers_for_http[i]);
+                    delete timers_for_http[i];
+                    
+                }
+                for(int i=0;i<size;i++)
+                {
+                    timers_for_http.pop_back();
+                }
+            }
             deletefd(m_epollfd, m_sockfd);
             m_sockfd = -1;
             m_user_count--;
@@ -130,7 +151,7 @@ bool http_conn::read()
     while(1)
     {
         read_len = recv(m_sockfd, m_read_buf+m_read_idx,READ_BUFFER_SIZE-m_read_idx,0);
-        debug("read content in %d is %s", m_sockfd, m_read_buf+m_read_idx);
+        debug("read content in %d is\n %s", m_sockfd, m_read_buf+m_read_idx);
         if(read_len < 0)
         {
             if(errno == EAGAIN || errno == EWOULDBLOCK)
@@ -231,11 +252,16 @@ http_conn::HTTP_CODE http_conn::parse_header(char* text)
             match = 1;
             debug("header is %s", header.c_str());
             text = text+header.size();
+            text++;
+            while(*text == ' ')
+            {
+                text++;
+            }
             m_header_map[i].fuc(text);
             break;
         }
     }
-    if(match = 0)
+    if(match == 0)
     {
         debug("bad header:%s", text);
     }
@@ -267,7 +293,6 @@ http_conn::HTTP_CODE http_conn::parse_content(char* text)
 }
 http_conn::HTTP_CODE http_conn::process_read()
 {
-    LINE_STATUS line_status = LINE_OK;
     HTTP_CODE ret = NO_REQUEST;
     char* text = 0;
     while((m_check_state == CHECK_STATE_CONTENT && parse_line() == LINE_OK) || (parse_line() == LINE_OK))
@@ -306,7 +331,6 @@ http_conn::HTTP_CODE http_conn::process_read()
                 {
                     return do_request();
                 }
-                line_status = LINE_OPEN;
                 break;
             }
             default:
@@ -346,9 +370,10 @@ http_conn::HTTP_CODE http_conn::do_request()
         return BAD_REQUEST;
     }
     int fd = open(m_real_file, O_RDONLY);
-    m_file_address = (char*)mmap(0, m_file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    m_file_address = (char*)mmap(NULL, m_file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
     m_file_type = strrchr(m_real_file, '.');
+    log_info("file type is %s", m_file_type);
     m_file_time = m_file_stat.st_mtime;
     return FILE_REQUEST;
 }
@@ -402,7 +427,10 @@ bool http_conn::write()
             unmap();
             if(m_linger)
             {
-                timer_http.add_timer(&timer_for_http);
+                heap_timer* timer_new = new heap_timer(DEFAULT_TIME, this);
+                timers_for_http.push_back(timer_new);
+                timer_http.add_timer(timer_new);
+                modfd(m_epollfd, m_sockfd, EPOLLIN);
                 init();
                 return true;
             }
@@ -459,6 +487,7 @@ bool http_conn::add_headers(int content_length, int status)
         stat = stat & add_last_modified();
     }
     stat = stat & add_blank_line();
+    return stat;
 }
 bool http_conn::add_host_name()
 {
@@ -470,7 +499,7 @@ bool http_conn::add_linger()
     if(m_linger)
     {
         str = (char*) "keep-alive";
-        add_response("keep-alive: %s\r\n", DEFAULT_TIME);
+        add_response("keep-alive: %d\r\n", DEFAULT_TIME);
     }
     else
     {
@@ -487,7 +516,7 @@ bool http_conn::add_content_type()
     auto ptr = content_type_set.find(m_file_type);
     if(ptr != content_type_set.end())
     {
-        return add_response("Content-type: %s\r\n", ptr->second);
+        return add_response("Content-type: %s\r\n", (ptr->second).c_str());
     }
     else
     {
@@ -500,7 +529,7 @@ string http_conn::uniform_content(const char* content)
     string str;
     str = str+"<html><title>Server Error</title><body bgcolor=ffffff>\n";
     str = str+content;
-    str = str+"</p><hr><em>Zaver web server</em>\n";
+    str = str+"</p><hr><em>Http web server</em>\n";
     str = str+"</body></html>\n";
     return str;
 }
@@ -538,9 +567,12 @@ bool http_conn::process_write(HTTP_CODE ret)
             add_status_line(400, error_400_title);
             str = uniform_content(error_400_form);
             add_headers(str.size(),400);
-            if(!add_content(str.c_str()))
+            if(m_method != HEAD)
             {
-                return false;
+                if(!add_content(str.c_str()))
+                {
+                    return false;
+                }
             }
             break;
         }
@@ -550,9 +582,12 @@ bool http_conn::process_write(HTTP_CODE ret)
             add_status_line(404, error_404_title);
             str = uniform_content(error_404_form);
             add_headers(str.size(),404);
-            if(! add_content(str.c_str()))
+            if(m_method != HEAD)
             {
-                return false;
+                if(! add_content(str.c_str()))
+                {
+                    return false;
+                }
             }
             break;
         }
@@ -562,9 +597,12 @@ bool http_conn::process_write(HTTP_CODE ret)
             add_status_line(403, error_403_title);
             str = uniform_content(error_403_form);
             add_headers(str.size(), 403);
-            if(! add_content(str.c_str()))
+            if(m_method != HEAD)
             {
-                return false;
+                if(! add_content(str.c_str()))
+                {
+                    return false;
+                }
             }
             break;
         }
@@ -573,6 +611,7 @@ bool http_conn::process_write(HTTP_CODE ret)
             add_status_line(200, ok_200_title);
             if(m_file_stat.st_size != 0)
             {
+                add_headers(m_file_stat.st_size, 200);
                 m_iv[0].iov_base = m_write_buf;
                 m_iv[0].iov_len = strlen(m_write_buf);
                 if(m_method == HEAD)
@@ -582,7 +621,7 @@ bool http_conn::process_write(HTTP_CODE ret)
                 else
                 {
                     m_iv[1].iov_base = m_file_address;
-                    m_iv[1].iov_len = strlen(m_file_address);
+                    m_iv[1].iov_len = m_file_stat.st_size;
                     m_iv_count = 2;
                 }
                 return true;
@@ -611,6 +650,18 @@ bool http_conn::process_write(HTTP_CODE ret)
 void http_conn::set_timer_handler(function<void()> fuc)
 {
     timer_handler = fuc;
+}
+http_conn::~http_conn()
+{
+    if(! timers_for_http.empty())
+    {
+        int size;
+        size = timers_for_http.size();
+        for(int i=0;i<size;i++)
+        {
+            delete timers_for_http[i];
+        }
+    }
 }
 void http_conn::process()
 {

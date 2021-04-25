@@ -1,0 +1,3 @@
+/home/billy/code/net_check/http_server_better/build/CMakeFiles/rebuild_cache.dir
+/home/billy/code/net_check/http_server_better/build/CMakeFiles/http_server.dir
+/home/billy/code/net_check/http_server_better/build/CMakeFiles/edit_cache.dir

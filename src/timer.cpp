@@ -1,10 +1,5 @@
 # include "timer.h"
 using namespace std;
-heap_timer::heap_timer(int delay, http_conn* http_m)
-{
-    http_instance = http_m;
-    expire = time(NULL)+delay;
-}
 time_heap::time_heap(int cap): capacity(cap), cur_size(0)
 {
     array = new heap_timer*[cap];
@@ -61,7 +56,7 @@ void time_heap::add_timer(heap_timer* timer)
     }
     int hole = cur_size++;
     int parent = 0;
-    for(;hole>=0;hole = parent)
+    for(;hole>0;hole = parent)
     {
         parent = (hole-1)/2;
         if(array[parent]->expire <= timer->expire)
@@ -78,13 +73,13 @@ void time_heap::del_timer(heap_timer* timer)
     {
         return;
     }
-    timer->http_instance = nullptr;
+    timer->stop_timer = true;
 }
 heap_timer* time_heap::top() const
 {
     if(empty())
     {
-        return ;
+        return nullptr;
     }
     return array[0];
 }
@@ -96,7 +91,7 @@ void time_heap::pop_timer()
     }
     if(array[0])
     {
-        delete array[0];
+        //delete array[0];
         array[0] = array[--cur_size];
         percolate_down(0);
     }
@@ -117,7 +112,7 @@ void time_heap::tick()
         {
             break;
         }
-        if(array[0]->http_instance)
+        if(array[0]->http_instance && array[0]->stop_timer == false)
         {
             array[0]->http_instance->timer_handler();
             // timer_handler is a memeber of class http_conn type std::function, and use member function  set_timer_handler in class http_conn to set the handler.
