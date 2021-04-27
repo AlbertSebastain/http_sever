@@ -114,6 +114,7 @@ void time_heap::tick()
         }
         if(array[0]->http_instance && array[0]->stop_timer == false)
         {
+            log_info("active timer");
             array[0]->http_instance->timer_handler();
             // timer_handler is a memeber of class http_conn type std::function, and use member function  set_timer_handler in class http_conn to set the handler.
         }

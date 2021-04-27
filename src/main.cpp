@@ -63,8 +63,8 @@ int main()
     int listenfd = socket(PF_INET, SOCK_STREAM, 0);
     check_exit(listenfd>=0, "fail in socket");
     alarm(TIME_SLOT);
-    struct  linger tmp = {1,0};
-    setsockopt(listenfd, SOL_SOCKET, SO_LINGER, &tmp, sizeof(tmp));
+    // struct  linger tmp = {1,0};
+    // setsockopt(listenfd, SOL_SOCKET, SO_LINGER, &tmp, sizeof(tmp));
     struct sockaddr_in address;
     bzero(&address, sizeof(address));
     address.sin_family = AF_INET;
@@ -99,6 +99,7 @@ int main()
                 struct sockaddr_in client_address;
                 socklen_t client_addrlength = sizeof(client_address);
                 int connfd = accept(listenfd, (sockaddr*)&client_address, &client_addrlength);
+                log_info("accept connection %d", connfd);
                 if(connfd < 0)
                 {
                     log_err("accept error");
@@ -106,6 +107,7 @@ int main()
                 }
                 if(http_conn::m_user_count >= MAX_FD)
                 {
+                    log_info("close connection %d", connfd);
                     show_error(connfd, "internal server busy\n");
                     continue;
                 }
@@ -139,10 +141,12 @@ int main()
             }
             else if(events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
+                log_info("close connection %d, client is closed", sockfd);
                 users[sockfd].close_conn();
             }
             else if(events[i].events & EPOLLIN)
             {
+                log_info("receive from fd %d", sockfd);
                 if(users[sockfd].read())
                 {
                     pool->append(users+sockfd);

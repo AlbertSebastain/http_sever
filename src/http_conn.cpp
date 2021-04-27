@@ -182,14 +182,17 @@ http_conn::HTTP_CODE http_conn::parse_request_line(char* text)
     *url++ = '\0';
     if(strcasecmp(text, "GET") == 0)
     {
+        log_info("method for fd %d is GET",m_sockfd);
         m_method = GET;
     }
     else if(strcasecmp(text, "HEAD") == 0)
     {
+        log_info("method for fd %d is HEAD",m_sockfd);
         m_method = HEAD;
     }
     else if(strcasecmp(text, "TRACE") == 0)
     {
+        log_info("method for fd %d is TRACE",m_sockfd);
         m_method = TRACE;
     }
     else
@@ -212,6 +215,7 @@ http_conn::HTTP_CODE http_conn::parse_request_line(char* text)
     }
     m_version = version;
     m_url = url;
+    log_info("url is %s", m_url);
     if(strncasecmp(m_url, "http://",7) == 0)
     {
         m_url += 7;
@@ -354,6 +358,7 @@ http_conn::HTTP_CODE http_conn::do_request()
     {
         strcpy(m_real_file+len, m_url);
     }
+    log_info("file is %s", m_real_file);
     if(stat(m_real_file, &m_file_stat) < 0) 
     {
         m_linger = false;
@@ -428,6 +433,7 @@ bool http_conn::write()
             if(m_linger)
             {
                 heap_timer* timer_new = new heap_timer(DEFAULT_TIME, this);
+                log_info("keep alive active timer");
                 timers_for_http.push_back(timer_new);
                 timer_http.add_timer(timer_new);
                 modfd(m_epollfd, m_sockfd, EPOLLIN);
@@ -436,6 +442,7 @@ bool http_conn::write()
             }
             else
             {
+                log_info("no keep alive close connection %d", m_sockfd);
                 modfd(m_epollfd, m_sockfd, EPOLLIN);
                 return false;
             }
@@ -547,6 +554,17 @@ bool http_conn::add_blank_line()
 }
 bool http_conn::process_write(HTTP_CODE ret)
 {
+    if(! timers_for_http.empty())
+    {
+        int size;
+        size = timers_for_http.size();
+        debug("total %d timers in the instance", size);
+        for(int i=0;i<size;i++)
+        {
+            timer_http.del_timer( timers_for_http[i]);
+            log_info("delete timer");
+        }
+    }
     switch(ret)
     {
         case INTERNAL_ERROR:

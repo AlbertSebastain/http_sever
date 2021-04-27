@@ -32,7 +32,7 @@ template<typename T>
 threadpool<T>::threadpool(config_t config)
 {
     m_thread_num = config.get_thread_num();
-    m_max_requests = config.get_thread_num();
+    m_max_requests = config.get_max_request();
     m_stop = false;
     m_threads = nullptr;
     debug("m thread_num is %d", m_thread_num);

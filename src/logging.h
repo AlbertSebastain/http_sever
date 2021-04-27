@@ -4,7 +4,7 @@
 # include <errno.h>
 # include <cstring>
 # include <stdlib.h>
-
+# define NDEBUG
 # ifdef NDEBUG
 # define debug(M,...)
 #else
