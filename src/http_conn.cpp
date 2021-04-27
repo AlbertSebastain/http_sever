@@ -404,12 +404,12 @@ bool http_conn::write()
     while(1)
     {
         int write_ret;
-        int log_send_file;
-        char* log_file;
-        log_file = (char*) "./http_return";
-        log_send_file = open(log_file, O_RDWR|O_CREAT|O_TRUNC, 0666);
-        write_ret = writev(log_send_file, m_iv, m_iv_count);
-        close(log_send_file);
+        // int log_send_file;
+        // char* log_file;
+        // log_file = (char*) "./http_return";
+        // log_send_file = open(log_file, O_RDWR|O_CREAT|O_TRUNC, 0666);
+        // write_ret = writev(log_send_file, m_iv, m_iv_count);
+        // close(log_send_file);
         write_ret = 0;
         write_ret = writev(m_sockfd, m_iv, m_iv_count);
         if(write_ret <= -1)
